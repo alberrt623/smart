@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智慧水壺監控面板</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7f6; color: #333; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    h2 { margin-top: 0; color: #007bff; }
+    .status { font-weight: bold; font-size: 1.2em; }
+    .timer { font-size: 2em; color: #e74c3c; font-weight: bold; }
+    .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1em; }
+    .btn:hover { background: #0056b3; }
+    .btn-danger { background: #dc3545; }
+    input[type="number"] { padding: 8px; width: 80px; font-size: 1em; border-radius: 5px; border: 1px solid #ccc; }
+    ul { list-style-type: none; padding: 0; }
+    li { background: #eef2f5; margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+
+  <h1>🥤 ESP32 智慧水壺控管中心</h1>
+
+  <!-- 藍芽連線區塊 -->
+  <div class="card">
+    <h2>1. 裝置狀態</h2>
+    <button class="btn" id="connectBtn" onclick="toggleConnect()">連線智慧水壺</button>
+    <p>連線狀態：<span id="bleStatus" class="status" style="color: red;">未連線</span></p>
+    <p>當前水壺重量：<span id="currentWeight" class="status">--</span> g</p>
+  </div>
+
+  <!-- 提醒與目標設定 -->
+  <div class="card">
+    <h2>2. 飲水提醒與設定</h2>
+    <label>提醒間隔（分鐘）：</label>
+    <input type="number" id="intervalInput" value="60" min="1">
+    <br><br>
+    <label>單次目標飲水量（ml / g）：</label>
+    <input type="number" id="targetInput" value="100" min="10">
+    <button class="btn" onclick="applySettings()">套用設定並開始計時</button>
+
+    <h3>下次提醒倒數：</h3>
+    <div id="timerDisplay" class="timer">00:00</div>
+  </div>
+
+  <!-- 飲水歷史紀錄 -->
+  <div class="card">
+    <h2>3. 今日飲水紀錄</h2>
+    <p>今日累計飲水：<strong id="totalDrink" style="font-size: 1.5em; color: #28a745;">0</strong> ml</p>
+    <ul id="historyList">
+      <li style="color: #888;">尚無飲水紀錄...</li>
+    </ul>
+  </div>
+
+  <script>
+    // BLE UUID (與 ESP32 一致)
+    const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+    let bleDevice = null;
+    let bleCharacteristic = null;
+
+    // 邏輯控制變數
+    let timerInterval = null;
+    let secondsLeft = 0;
+    let totalDrinkAmount = 0;
+    let reminderIntervalMinutes = 60;
+    let targetDrinkAmount = 100;
+
+    // 1. 藍芽連線 / 斷開控制
+    async function toggleConnect() {
+      if (bleDevice && bleDevice.gatt.connected) {
+        bleDevice.gatt.disconnect();
+        return;
+      }
+
+      try {
+        console.log("正在搜尋 BLE 裝置...");
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [SERVICE_UUID] }]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+        const server = await bleDevice.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+        // 監聽 ESP32 發送過來的 Notification
+        await bleCharacteristic.startNotifications();
+        bleCharacteristic.addEventListener('characteristicvaluechanged', handleBLEData);
+
+        document.getElementById('bleStatus').innerText = "已連線";
+        document.getElementById('bleStatus').style.color = "green";
+        document.getElementById('connectBtn').innerText = "斷開連線";
+
+        // 連線後同步目標金額給 ESP32
+        applySettings();
+
+      } catch (error) {
+        console.error("藍芽連線失敗：", error);
+        alert("連線失敗：" + error.message);
+      }
+    }
+
+    function onDisconnected() {
+      document.getElementById('bleStatus').innerText = "已斷開";
+      document.getElementById('bleStatus').style.color = "red";
+      document.getElementById('connectBtn').innerText = "連線智慧水壺";
+      clearInterval(timerInterval);
+    }
+
+    // 2. 處理從 ESP32 接收到的數據
+    function handleBLEData(event) {
+      const decoder = new TextDecoder('utf-8');
+      const value = decoder.decode(event.target.value);
+      console.log("收到 ESP32 數據:", value);
+
+      // (A) 即時重量更新: W:xxx
+      if (value.startsWith("W:")) {
+        const weight = parseFloat(value.substring(2)).toFixed(1);
+        document.getElementById('currentWeight').innerText = weight;
+      }
+      // (B) 成功喝水通知: DRINK:xxx
+      else if (value.startsWith("DRINK:")) {
+        const drankAmount = parseFloat(value.substring(6)).toFixed(1);
+        handleSuccessfulDrink(drankAmount);
+      }
+    }
+
+    // 3. 傳送指令給 ESP32
+    async function sendCommand(cmd) {
+      if (bleCharacteristic) {
+        try {
+          const encoder = new TextEncoder();
+          await bleCharacteristic.writeValue(encoder.encode(cmd));
+          console.log("已傳送指令:", cmd);
+        } catch (e) {
+          console.error("傳送指令失敗:", e);
+        }
+      }
+    }
+
+    // 4. 設定提醒間隔與目標量，並開始計時
+    function applySettings() {
+      reminderIntervalMinutes = parseInt(document.getElementById('intervalInput').value) || 60;
+      targetDrinkAmount = parseFloat(document.getElementById('targetInput').value) || 100;
+
+      // 發送目標飲水量給 ESP32 (例如 "TARGET:100")
+      sendCommand(`TARGET:${targetDrinkAmount}`);
+
+      // 關閉亮燈並重新啟動計時器
+      sendCommand("LED_OFF");
+      resetTimer();
+    }
+
+    // 5. 倒數計時器邏輯
+    function resetTimer() {
+      clearInterval(timerInterval);
+      secondsLeft = reminderIntervalMinutes * 60;
+      updateTimerDisplay();
+
+      timerInterval = setInterval(() => {
+        secondsLeft--;
+        updateTimerDisplay();
+
+        // 時間到：發送亮燈指令提醒
+        if (secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById('timerDisplay').innerText = "時間到！請喝水！";
+          sendCommand("LED_ON"); // 點亮 ESP32 WS2812B 紅燈
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+      const secs = (secondsLeft % 60).toString().padStart(2, '0');
+      document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
+    }
+
+    // 6. 成功喝水後的處理邏輯 (達標)
+    function handleSuccessfulDrink(amount) {
+      // (A) 關閉紅燈提醒
+      sendCommand("LED_OFF");
+
+      // (B) 自動重置計時器，重新跑一遍！
+      resetTimer();
+
+      // (C) 新增飲水歷史紀錄與更新今日總量
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+      totalDrinkAmount += parseFloat(amount);
+      document.getElementById('totalDrink').innerText = totalDrinkAmount.toFixed(0);
+
+      const historyList = document.getElementById('historyList');
+      if (historyList.children[0] && historyList.children[0].innerText.includes("尚無飲水紀錄")) {
+        historyList.innerHTML = "";
+      }
+
+      const li = document.createElement('li');
+      li.innerHTML = `<span>⏰ ${timeStr} 補充水分</span><strong style="color: #28a745;">+${amount} ml</strong>`;
+      historyList.insertBefore(li, historyList.firstChild); // 最新紀錄置頂
+
+      alert(`🎉 太棒了！您成功喝了 ${amount} ml 的水，定時提醒已重新倒數！`);
+    }
+  </script>
+</body>
+</html>
