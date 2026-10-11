@@ -3,90 +3,115 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>智慧水壺控制中心 V2.4 (BLE + HX711 完整修正版)</title>
+<title>智慧水壺控制中心 V3.0 (穩定版)</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:#f4f7fb;color:#1f2937}
-header{background:white;padding:22px;box-shadow:0 1px 8px #00000012}h1{margin:0;font-size:25px}.sub{color:#6b7280;margin-top:5px;font-size:14px}
-main{max-width:920px;margin:auto;padding:20px;display:grid;gap:16px}.card{background:white;border-radius:18px;padding:20px;box-shadow:0 4px 18px #0000000b}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}.label{font-size:14px;color:#6b7280}.big{text-align:center;font-size:42px;font-weight:750;margin:12px 0}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:#f4f7fb;color:#1f2937}
+header{background:white;padding:22px;box-shadow:0 1px 8px rgba(0,0,0,0.07)}
+h1{margin:0;font-size:25px;color:#1e293b}
+.sub{color:#6b7280;margin-top:5px;font-size:14px}
+main{max-width:920px;margin:auto;padding:20px;display:grid;gap:16px}
+.card{background:white;border-radius:18px;padding:20px;box-shadow:0 4px 18px rgba(0,0,0,0.04)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.label{font-size:14px;color:#6b7280}
+.big{text-align:center;font-size:40px;font-weight:750;margin:12px 0;color:#0f172a}
 input{width:100%;padding:12px;border:1px solid #d7dce3;border-radius:10px;font-size:16px;margin-top:7px}
-button{border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:650;cursor:pointer;background:#2563eb;color:white}
-button.secondary{background:#eef2f7;color:#374151}button.danger{background:#fee2e2;color:#dc2626}
-.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.row>div{flex:1;min-width:150px}.status{display:inline-block;padding:7px 12px;border-radius:999px;background:#eef2f7;font-weight:650}
-.progress{height:16px;background:#e9edf2;border-radius:999px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:#2563eb;transition:.5s}
-.led{width:22px;height:22px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:8px;background:#9ca3af}
-.note{font-size:13px;color:#6b7280;line-height:1.6}.highlight{font-size:20px;font-weight:700}.success{color:#16803c}
+button{border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:650;cursor:pointer;background:#2563eb;color:white;transition:0.2s}
+button:hover{background:#1d4ed8}
+button.secondary{background:#eef2f7;color:#374151}
+button.danger{background:#fee2e2;color:#dc2626}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.row>div{flex:1;min-width:150px}
+.status{display:inline-block;padding:7px 12px;border-radius:999px;background:#eef2f7;font-weight:650;font-size:14px}
+.progress{height:16px;background:#e9edf2;border-radius:999px;overflow:hidden;margin:10px 0}
+.bar{height:100%;width:0;background:#2563eb;transition:.5s}
+.led{width:20px;height:20px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:8px;background:#9ca3af}
+.note{font-size:13px;color:#6b7280;line-height:1.6}
+.highlight{font-size:18px;font-weight:700;margin-top:10px}
+.success{color:#16803c}
 .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
-.card-header h2{margin:0}
-table{width:100%;border-collapse:collapse}td,th{padding:10px;border-bottom:1px solid #edf0f4;text-align:left}
+.card-header h2{margin:0;font-size:20px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:10px;border-bottom:1px solid #edf0f4;text-align:left}
 </style>
 </head>
 <body>
-<header><h1> 智慧水壺控制中心 <span style="font-size:15px;color:#2563eb">V2.4 BLE</span></h1><div class="sub">個人化飲水計算・HX711 重量偵測・WS2812B 燈條提醒</div></header>
+
+<header>
+  <h1>智慧水壺控制中心 <span style="font-size:14px;color:#2563eb;background:#dbeafe;padding:3px 8px;border-radius:6px">V3.0 BLE</span></h1>
+  <div class="sub">HX711 準確感測・WS2812B 提醒控制・飲水數據持久化記錄</div>
+</header>
+
 <main>
+  <!-- 每日目標計算區 -->
+  <section class="card">
+    <h2>每日飲水量建議計算</h2>
+    <div class="row">
+      <div><label>身高 (cm)</label><input id="height" type="number" placeholder="例: 170"></div>
+      <div><label>體重 (kg)</label><input id="bodyWeight" type="number" step="0.1" placeholder="例: 65"></div>
+      <div><button onclick="calculateWater()">計算建議量</button></div>
+    </div>
+    <div id="calcResult" class="highlight">輸入身高體重後即可獲得建議饮水量</div>
+  </section>
 
-<section class="card">
-<h2> 每日飲水量計算機</h2>
-<div class="row">
-<div><label> 身高（cm）</label><input id="height" type="number" placeholder="例如 170"></div>
-<div><label> 體重（kg）</label><input id="bodyWeight" type="number" step="0.1" placeholder="例如 60"></div>
-<div><button onclick="calculateWater()">計算每日目標</button></div>
-</div>
-<p class="note">估算方式：依【（身高 + 體重）× 10 ml】作為初步飲水參考目標。</p>
-<div id="calcResult" class="highlight">請輸入資料後計算 </div>
-</section>
+  <!-- 今日進度 -->
+  <section class="card">
+    <div class="card-header">
+      <h2>今日飲水進度</h2>
+      <button class="danger" style="padding:6px 12px;font-size:13px" onclick="resetToday()">清空今日紀錄</button>
+    </div>
+    <div class="grid">
+      <div><div class="label">今日累計</div><div class="big"><span id="todayVal">0</span><small style="font-size:16px"> ml</small></div></div>
+      <div><div class="label">每日目標</div><div class="big"><span id="goal">--</span><small style="font-size:16px"> ml</small></div></div>
+      <div><div class="label">剩餘目標</div><div class="big"><span id="remaining">--</span><small style="font-size:16px"> ml</small></div></div>
+    </div>
+    <div class="progress"><div class="bar" id="drinkBar"></div></div>
+    <div id="percent" class="label">請設定每日目標</div>
+  </section>
 
-<section class="card">
-<div class="card-header">
-<h2> 今日飲水進度</h2>
-<button class="danger" style="padding:6px 12px;font-size:13px" onclick="resetToday()">手動清空歸零</button>
-</div>
-<div class="grid">
-<div><div class="label">今日已喝</div><div class="big"><span id="todayVal">0</span><small style="font-size:17px"> ml</small></div></div>
-<div><div class="label">每日目標</div><div class="big"><span id="goal">--</span><small style="font-size:17px"> ml</small></div></div>
-<div><div class="label">還需要</div><div class="big"><span id="remaining">--</span><small style="font-size:17px"> ml</small></div></div>
-</div>
-<div class="progress"><div class="bar" id="drinkBar"></div></div>
-<div id="percent" class="label">設定每日目標後即可查看進度</div>
-</section>
+  <!-- 硬體即時狀態 -->
+  <section class="card">
+    <div class="grid">
+      <div><div class="label">目前水壺重量 (HX711)</div><div class="big"><span id="weight">0</span><small style="font-size:16px"> g</small></div></div>
+      <div><div class="label">藍芽連線狀態</div><div style="margin-top:20px"><span id="status" class="status">未連線</span></div></div>
+      <div><div class="label">燈條提醒狀態</div><div style="margin-top:20px"><span class="led" id="led"></span><b id="ledText">未啟用</b></div></div>
+    </div>
+  </section>
 
-<section class="card">
-<div class="grid">
-<div><div class="label"> 目前水壺重量 (HX711)</div><div class="big"><span id="weight">--</span><small style="font-size:17px"> g</small></div></div>
-<div><div class="label"> 系統狀態</div><div style="margin-top:25px"><span id="status" class="status">等待 ESP32 連線</span></div></div>
-<div><div class="label"> 燈條狀態</div><div style="margin-top:25px"><span class="led" id="led"></span><b id="ledText">未啟動</b></div></div>
-</div>
-</section>
+  <!-- 提醒與門檻設定 -->
+  <section class="card">
+    <h2>飲水提醒與門檻設定</h2>
+    <div class="row">
+      <div><label>提醒間隔（分鐘）</label><input id="interval" type="number" min="1"></div>
+      <div><label>單次飲水門檻 (ml/g)</label><input id="threshold" type="number" min="1"></div>
+      <div><button onclick="saveSettings()">儲存並同步至水壺</button></div>
+    </div>
+  </section>
 
-<section class="card">
-<h2> 飲水提醒與門檻設定</h2>
-<div class="row">
-<div><label>多久提醒一次（分鐘）</label><input id="interval" type="number" min="1"></div>
-<div><label>一次喝水門檻 (ml)</label><input id="threshold" type="number" min="1"></div>
-<div><button onclick="saveSettings()">儲存並同步至ESP32</button></div>
-</div>
-<p class="note">拿起水壺並放回後，減少的重量必須大於或等於此門檻，系統才會自動記錄並重新倒數。</p>
-</section>
+  <!-- 倒數計時 -->
+  <section class="card">
+    <h2>下一次喝水提醒倒數</h2>
+    <div class="big" id="countdown">--:--</div>
+    <div class="progress"><div id="timeBar" class="bar"></div></div>
+  </section>
 
-<section class="card">
-<h2> 下一次飲水提醒</h2>
-<div class="big" id="countdown">--:--</div>
-<div class="progress"><div id="timeBar" class="bar"></div></div>
-</section>
+  <!-- 連線與模擬控制 -->
+  <section class="card">
+    <h2>藍芽連線與測試</h2>
+    <div class="row">
+      <div><button id="bleBtn" onclick="connectBLE()"> 連線 ESP32 智慧水壺</button></div>
+      <div><button class="secondary" onclick="demoDrink()"> 模擬喝水測試 (+150ml)</button></div>
+    </div>
+  </section>
 
-<section class="card">
-<h2> 系統測試 / ESP32 藍芽連線</h2>
-<div class="row">
-<div><button id="bleBtn" onclick="connectBLE()"> 連線 ESP32 藍芽</button></div>
-<div><button class="secondary" onclick="demoDrink()">模擬喝水測試</button></div>
-</div>
-<p class="note">點擊連線後可搭配真實 ESP32 開發板；時間到將自動點亮 WS2812B 紅燈；實際拿水壺喝水達標後會自動記錄並熄滅燈條。</p>
-</section>
-
-<section class="card">
-<h2> 今日飲水紀錄</h2>
-<table><thead><tr><th>時間</th><th>飲水量</th></tr></thead><tbody id="log"></tbody></table>
-</section>
+  <!-- 飲水歷史紀錄 -->
+  <section class="card">
+    <h2>今日飲水歷史明細</h2>
+    <table>
+      <thead><tr><th>時間</th><th>喝水量</th></tr></thead>
+      <tbody id="log"></tbody>
+    </table>
+  </section>
 </main>
 
 <script>
@@ -95,12 +120,13 @@ const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
 let bluetoothDevice = null;
 let weightCharacteristic = null;
-let hasAlerted = false; // 避免時間到後重複發送指令
-let bleBuffer = "";     // BLE 訊號緩衝區
+let hasAlerted = false;
+let bleBuffer = ""; 
 
-const get = (k, d) => JSON.parse(localStorage.getItem(k) || JSON.stringify(d));
+const getLocal = (k, d) => JSON.parse(localStorage.getItem(k) || JSON.stringify(d));
 
-function checkNewDay() {
+// 每日跨日自動重置
+(function checkNewDay() {
   const lastDate = localStorage.getItem('bottleLastDate');
   const todayDate = new Date().toLocaleDateString();
   if (lastDate !== todayDate) {
@@ -108,33 +134,27 @@ function checkNewDay() {
     localStorage.setItem('bottleLogs', JSON.stringify([]));
     localStorage.setItem('bottleLastDate', todayDate);
   }
-}
-checkNewDay();
+})();
 
-let profile = get('bottleProfile', {height:'', weight:'', goal:0});
-let settings = get('bottleSettings', {interval:60, threshold:100});
+let profile = getLocal('bottleProfile', {height:'', weight:'', goal:0});
+let settings = getLocal('bottleSettings', {interval:60, threshold:10});
 let todayAmount = Number(localStorage.getItem('bottleToday') || 0);
-let logs = get('bottleLogs', []);
+let logs = getLocal('bottleLogs', []);
 let lastDrink = Number(localStorage.getItem('bottleLastDrink') || Date.now());
 
-const heightEl = document.getElementById('height');
-const weightEl = document.getElementById('bodyWeight');
-const intervalEl = document.getElementById('interval');
-const thresholdEl = document.getElementById('threshold');
-const todayEl = document.getElementById('todayVal');
+// 渲染輸入欄位初始值
+document.getElementById('height').value = profile.height;
+document.getElementById('bodyWeight').value = profile.weight;
+document.getElementById('interval').value = settings.interval;
+document.getElementById('threshold').value = settings.threshold;
 
-heightEl.value = profile.height;
-weightEl.value = profile.weight;
-intervalEl.value = settings.interval;
-thresholdEl.value = settings.threshold;
-
-// --- Web BLE 藍牙雙向溝通邏輯 ---
+// --- Web BLE 雙向傳輸機制 ---
 
 async function connectBLE() {
   const statusEl = document.getElementById('status');
   const bleBtn = document.getElementById('bleBtn');
   try {
-    statusEl.textContent = '搜尋與連線中...';
+    statusEl.textContent = '搜尋裝置中...';
     statusEl.style.background = '#fef3c7';
 
     bluetoothDevice = await navigator.bluetooth.requestDevice({
@@ -146,26 +166,26 @@ async function connectBLE() {
     const service = await server.getPrimaryService(SERVICE_UUID);
     weightCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
 
-    // 啟動接收 ESP32 回傳數據
     await weightCharacteristic.startNotifications();
     weightCharacteristic.addEventListener('characteristicvaluechanged', handleBLEMessage);
 
-    // 連線成功後，同步門檻至 ESP32
+    // 連線成功後同步設定門檻
     await sendCommandToESP32("TARGET:" + settings.threshold);
 
-    statusEl.textContent = 'ESP32 藍芽已連線';
+    statusEl.textContent = '已成功連線';
     statusEl.style.background = '#dcfce7';
+    statusEl.style.color = '#166534';
     bleBtn.textContent = '✓ 已連線 ESP32';
     bleBtn.style.background = '#16a34a';
 
   } catch (err) {
     console.error('BLE 連線失敗:', err);
-    statusEl.textContent = '藍牙連線失敗';
+    statusEl.textContent = '連線失敗 / 中斷';
     statusEl.style.background = '#fee2e2';
+    statusEl.style.color = '#991b1b';
   }
 }
 
-// 發送指令至 ESP32
 async function sendCommandToESP32(command) {
   if (!weightCharacteristic) return;
   try {
@@ -176,48 +196,53 @@ async function sendCommandToESP32(command) {
     } else {
       await weightCharacteristic.writeValue(data);
     }
-    console.log(`成功傳送指令至 ESP32: [${command}]`);
+    console.log("發送指令給 ESP32:", command);
   } catch (err) {
     console.error("發送指令失敗:", err);
   }
 }
 
-// 接收 ESP32 傳來的訊息 (抗干擾/拆封包正則解析版)
+// 接收與解析 ESP32 訊息
 function handleBLEMessage(event) {
   const decoder = new TextDecoder('utf-8');
   bleBuffer += decoder.decode(event.target.value);
 
-  // 1. 解析 DRINK 喝水達標事件
+  // 1. 處理 DRINK 喝水事件
   if (bleBuffer.includes("DRINK:")) {
     const drinkMatch = bleBuffer.match(/DRINK:([\d.]+)/);
     if (drinkMatch) {
       const drankAmount = parseFloat(drinkMatch[1]);
-      console.log("🎉 成功接收到喝水事件，數量:", drankAmount);
-      registerDrink(drankAmount);
-      bleBuffer = ""; // 成功解析後清空緩衝區
+      if (!isNaN(drankAmount) && drankAmount > 0) {
+        console.log("收到完整喝水事件，數量:", drankAmount);
+        registerDrink(drankAmount);
+      }
+      bleBuffer = ""; // 清空緩衝
       return;
     }
   }
 
-  // 2. 解析 W: 即時重量更新
+  // 2. 處理 W: 即時重量更新
   if (bleBuffer.includes("W:")) {
     const weightMatch = bleBuffer.match(/W:([\d.]+)/);
     if (weightMatch) {
       const currentWeight = parseFloat(weightMatch[1]);
-      document.getElementById('weight').textContent = Math.round(currentWeight);
+      if (!isNaN(currentWeight)) {
+        document.getElementById('weight').textContent = Math.max(0, Math.round(currentWeight));
+      }
     }
-    if (bleBuffer.length > 100) bleBuffer = ""; // 防溢位
+    if (bleBuffer.length > 80) bleBuffer = ""; // 避免緩衝過長
   }
 }
 
-// ------------------------------------
+// --- 介面控制與計時邏輯 ---
 
 function calculateWater(){
-  let h = Number(heightEl.value), w = Number(weightEl.value);
-  if(!h || !w){ alert('請輸入身高與體重'); return; }
+  let h = Number(document.getElementById('height').value);
+  let w = Number(document.getElementById('bodyWeight').value);
+  if(!h || !w){ alert('請輸入有效的身高與體重'); return; }
   profile = {height:h, weight:w, goal:Math.round((h + w) * 10)};
   localStorage.setItem('bottleProfile', JSON.stringify(profile));
-  document.getElementById('calcResult').innerHTML = `你的建議每日飲水目標：約 <span class="success">${profile.goal} ml</span>`;
+  document.getElementById('calcResult').innerHTML = `建議每日目標：<span class="success">${profile.goal} ml</span>`;
   updateProgress();
 }
 
@@ -227,31 +252,33 @@ function updateProgress(){
   if(!g){
     document.getElementById('remaining').textContent = '--';
     document.getElementById('drinkBar').style.width = '0%';
-    document.getElementById('percent').textContent = '設定每日目標後即可查看進度';
+    document.getElementById('percent').textContent = '請先計算或設定目標';
     return;
   }
   let remain = Math.max(0, g - todayAmount);
   let p = Math.min(100, Math.round(todayAmount / g * 100));
-  todayEl.textContent = todayAmount;
+  document.getElementById('todayVal').textContent = todayAmount;
   document.getElementById('remaining').textContent = remain;
   document.getElementById('drinkBar').style.width = p + '%';
-  document.getElementById('percent').textContent = p >= 100 ? '🎉 今日飲水目標已達成！' : `目前完成 ${p}% ・還差 ${remain} ml`;
+  document.getElementById('percent').textContent = p >= 100 ? '🎉 今日飲水目標已達成！' : `進度 ${p}% ・ 還差 ${remain} ml`;
 }
 
 function resetToday(){
-  if(confirm('確定要清空今天的飲水紀錄與進度嗎？')){
+  if(confirm('確定要清空今天的飲水紀錄嗎？')){
     todayAmount = 0;
     logs = [];
     localStorage.setItem('bottleToday', 0);
     localStorage.setItem('bottleLogs', JSON.stringify([]));
     renderLogs();
     updateProgress();
-    alert('今日飲水紀錄已歸零！');
   }
 }
 
 async function saveSettings(){
-  settings = {interval: Number(intervalEl.value), threshold: Number(thresholdEl.value)};
+  settings = {
+    interval: Number(document.getElementById('interval').value),
+    threshold: Number(document.getElementById('threshold').value)
+  };
   localStorage.setItem('bottleSettings', JSON.stringify(settings));
 
   lastDrink = Date.now();
@@ -259,10 +286,8 @@ async function saveSettings(){
   localStorage.setItem('bottleLastDrink', lastDrink);
   tick();
 
-  // 同步最新門檻至 ESP32
   await sendCommandToESP32("TARGET:" + settings.threshold);
-
-  alert('飲水提醒與門檻設定已儲存，並同步至 ESP32！');
+  alert('設定已儲存並同步至 ESP32！');
 }
 
 function setLED(state, text){
@@ -270,7 +295,7 @@ function setLED(state, text){
   const led = document.getElementById('led');
   const ledText = document.getElementById('ledText');
   led.style.background = colors[state];
-  led.style.boxShadow = state === 'off' ? 'none' : `0 0 16px ${colors[state]}`;
+  led.style.boxShadow = state === 'off' ? 'none' : `0 0 12px ${colors[state]}`;
   ledText.textContent = text;
 }
 
@@ -287,7 +312,7 @@ function registerDrink(amount){
     amount: amount
   });
 
-  // 喝水成功：重置倒數時間
+  // 喝水成功：自動重新倒數
   lastDrink = Date.now();
   hasAlerted = false;
 
@@ -299,12 +324,9 @@ function registerDrink(amount){
   updateProgress();
 
   setLED('green', '偵測到喝水達標 ✓');
-  document.getElementById('status').textContent = '飲水已成功記錄';
-
-  // 發送指令給 ESP32 熄滅 WS2812B 燈條
   sendCommandToESP32('LED_OFF');
 
-  setTimeout(() => setLED('off', '等待下一次提醒'), 2500);
+  setTimeout(() => setLED('off', '等待下一次提醒'), 3000);
 }
 
 function renderLogs(){
@@ -328,10 +350,7 @@ function tick(){
   document.getElementById('timeBar').style.width = Math.min(100, (elapsed / total) * 100) + '%';
 
   if (remain <= 0) {
-    setLED('red', '該喝水了！');
-    document.getElementById('status').textContent = '等待喝水達標';
-
-    // 時間到發送點亮紅燈指令
+    setLED('red', '提醒時間到！請喝水');
     if (!hasAlerted) {
       sendCommandToESP32('LED_ON');
       hasAlerted = true;
@@ -339,14 +358,12 @@ function tick(){
   }
 }
 
-// 初始化渲染
+// 頁面初次渲染與輪詢
 renderLogs();
 updateProgress();
 if (profile.goal) {
-  document.getElementById('calcResult').innerHTML = `你的建議每日飲水目標：約 <span class="success">${profile.goal} ml</span>`;
+  document.getElementById('calcResult').innerHTML = `建議每日目標：<span class="success">${profile.goal} ml</span>`;
 }
-
-// 倒數計時輪詢
 setInterval(tick, 1000);
 tick();
 </script>
