@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AQUA | 智慧飲水控制中心</title>
+<style>
+:root {
+--bg: #0b1220;
+--card: #111c2e;
+--card2: #15243a;
+--line: #26364d;
+--text: #edf5ff;
+--muted: #8fa2bb;
+--cyan: #54ead5;
+--blue: #55b8ff;
+--green: #55e6a5;
+--red: #ff7188;
+}
+* { box-sizing: border-box; }
+body {
+margin: 0;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+"Noto Sans TC", sans-serif;
+background: radial-gradient(ellipse at top right, #183b5a, transparent 42%), var(--bg);
+color: var(--text);
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+.app {
+max-width: 1400px;
+margin: auto;
+padding: 24px;
+}
+header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+gap: 16px;
+margin-bottom: 26px;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo {
+width: 48px; height: 48px;
+display: grid; place-items: center;
+border-radius: 16px;
+background: linear-gradient(135deg, var(--cyan), var(--blue));
+color: #071522; font-size: 25px; font-weight: 900;
+}
+h1 { font-size: 25px; margin: 0; }
+.subtitle { color: var(--muted); font-size: 12px; margin-top: 6px; }
+button {
+border: 0; border-radius: 12px; padding: 12px 16px;
+font-weight: 750; font-size: 13px;
+}
+.primary {
+color: #071522;
+background: linear-gradient(120deg, var(--cyan), var(--blue));
+}
+.secondary { background: #1b2b41; color: var(--text); }
+.danger { background: #351c2a; color: #ff9bad; }
+.grid {
+display: grid;
+grid-template-columns: minmax(0, 1.5fr) minmax(280px, .85fr);
+gap: 18px;
+}
+.stack { display: grid; align-content: start; gap: 18px; }
+.card {
+background: linear-gradient(145deg, var(--card2), var(--card));
+border: 1px solid var(--line);
+border-radius: 22px;
+padding: 22px;
+box-shadow: 0 16px 40px #0002;
+min-width: 0;
+}
+.hero {
+background: linear-gradient(125deg, #15394b, #13243a 65%, #17233a);
+overflow: hidden;
+}
+.eyebrow {
+color: var(--cyan); font-size: 10px;
+font-weight: 850; letter-spacing: 2px;
+}
+h2 { font-size: 22px; margin: 12px 0 8px; }
+h3 { font-size: 15px; margin: 0; }
+.muted { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.hero-content {
+display: grid;
+grid-template-columns: 1fr 190px;
+align-items: center; gap: 15px;
+}
+.big-number {
+font-size: 42px; font-weight: 850;
+letter-spacing: -1px; margin-top: 22px;
+}
+.big-number small { font-size: 13px; color: var(--muted); }
+.ring {
+width: 175px; height: 175px;
+position: relative; display: grid; place-items: center;
+margin: auto;
+}
+.ring svg {
+width: 100%; height: 100%;
+transform: rotate(-90deg);
+}
+.ring circle {
+fill: none; stroke-width: 10;
+}
+.track { stroke: #ffffff14; }
+.ring-fill {
+stroke: url(#gradient);
+stroke-linecap: round;
+stroke-dasharray: 440;
+stroke-dashoffset: 440;
+transition: stroke-dashoffset .6s;
+}
+.ring-center { position: absolute; text-align: center; }
+.percent { font-size: 34px; font-weight: 850; }
+.ring-label { color: var(--muted); font-size: 10px; }
+.stats {
+display: grid;
+grid-template-columns: repeat(3, minmax(0, 1fr));
+gap: 12px;
+}
+.stat {
+padding: 16px;
+background: #0e192a;
+border: 1px solid #24344b;
+border-radius: 16px;
+min-width: 0;
+}
+.stat-icon { font-size: 20px; margin-bottom: 12px; }
+.stat-label { color: var(--muted); font-size: 11px; }
+.stat-value { font-size: 25px; font-weight: 850; margin-top: 7px; }
+.stat-value small { font-size: 11px; color: var(--muted); }
+.stat-foot { color: var(--muted); font-size: 10px; margin-top: 7px; }
+.card-head {
+display: flex; justify-content: space-between;
+align-items: center; gap: 12px; margin-bottom: 18px;
+}
+.pill {
+border: 1px solid var(--line);
+border-radius: 99px;
+padding: 7px 10px;
+color: var(--muted);
+background: #0d1727;
+font-size: 10px; font-weight: 800;
+}
+.hardware-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+}
+.hardware {
+display: flex; align-items: center; gap: 12px;
+padding: 14px; border-radius: 14px;
+background: #0e192a; border: 1px solid #24344b;
+min-width: 0;
+}
+.hw-icon {
+width: 38px; height: 38px; flex-shrink: 0;
+display: grid; place-items: center;
+border-radius: 12px; background: #1a3045;
+font-size: 18px;
+}
+.hw-label { color: var(--muted); font-size: 10px; }
+.hw-value { font-size: 13px; font-weight: 800; margin-top: 5px; overflow-wrap: anywhere; }
+.hw-sub { color: var(--muted); font-size: 10px; margin-top: 4px; }
+.countdown { font-size: 42px; font-weight: 850; margin: 18px 0 6px; }
+.progress {
+height: 7px; border-radius: 99px;
+background: #ffffff13; overflow: hidden; margin-top: 18px;
+}
+.bar {
+height: 100%; width: 0;
+background: linear-gradient(90deg, var(--cyan), var(--blue));
+transition: width .4s;
+}
+.form-grid {
+display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+input {
+width: 100%; padding: 12px;
+border-radius: 11px; border: 1px solid #2a3b53;
+background: #0b1524; color: var(--text);
+outline: none; min-width: 0;
+}
+input:focus { border-color: var(--cyan); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+.actions button { flex: 1; }
+.history-item {
+display: grid; grid-template-columns: 38px 1fr auto;
+align-items: center; gap: 12px;
+padding: 13px 0; border-bottom: 1px solid #24344b;
+}
+.history-icon {
+width: 36px; height: 36px;
+display: grid; place-items: center;
+background: #1a3045; border-radius: 12px;
+}
+.history-title { font-size: 12px; font-weight: 750; }
+.history-time { color: var(--muted); font-size: 10px; margin-top: 5px; }
+.history-amount { color: var(--cyan); font-size: 13px; font-weight: 800; }
+.note { color: var(--muted); font-size: 10px; line-height: 1.7; margin-top: 12px; }
+#toast {
+display: none; position: fixed; right: 20px; bottom: 20px;
+padding: 14px 18px; background: #e8fff6; color: #10251f;
+border-radius: 12px; font-size: 12px; font-weight: 800;
+max-width: calc(100vw - 40px);
+}
+#toast.show { display: block; }
+@media(max-width:900px) {
+.grid { grid-template-columns: 1fr; }
+}
+@media(max-width:560px) {
+.app { padding: 13px; }
+header { align-items: flex-start; }
+h1 { font-size: 19px; }
+header .primary { padding: 10px; font-size: 11px; }
+.card { padding: 16px; border-radius: 18px; }
+.hero-content { grid-template-columns: 1fr 120px; }
+.ring { width: 115px; height: 115px; }
+.percent { font-size: 25px; }
+.big-number { font-size: 31px; }
+.stats { gap: 7px; }
+.stat { padding: 11px; }
+.stat-value { font-size: 19px; }
+.hardware { padding: 10px; gap: 7px; }
+.hw-icon { width: 30px; height: 30px; }
+.hw-value { font-size: 11px; }
+.countdown { font-size: 36px; }
+}
+@media(max-width:380px) {
+.hero-content { grid-template-columns: 1fr; }
+.ring { margin: 12px 0 0; }
+.stats, .hardware-grid, .form-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<div class="brand">
+<div class="logo">≈</div>
+<div>
+<h1>AQUA 智慧飲水中心</h1>
+<div class="subtitle">SMART HYDRATION SYSTEM · V4.0</div>
+</div>
+</div>
+<button class="primary" id="connectBtn">↗ 連線水壺</button>
+</header>
+
+<div class="grid">
+<div class="stack">
+<section class="card hero">
+<div class="hero-content">
+<div>
+<div class="eyebrow">TODAY'S HYDRATION</div>
+<h2>每一口水，<br>都是更好的狀態。</h2>
+<div class="muted" id="heroMessage">開始記錄今天的飲水進度。</div>
+<div class="big-number"><span id="todayVal">0</span><small> ml</small></div>
+<div class="muted">今日已累計飲水量</div>
+</div>
+<div class="ring">
+<svg viewBox="0 0 160 160">
+<defs>
+<linearGradient id="gradient">
+<stop offset="0%" stop-color="#54ead5"/>
+<stop offset="100%" stop-color="#55b8ff"/>
+</linearGradient>
+</defs>
+<circle class="track" cx="80" cy="80" r="70"/>
+<circle class="ring-fill" id="ringFill" cx="80" cy="80" r="70"/>
+</svg>
+<div class="ring-center">
+<div class="percent" id="percent">0%</div>
+<div class="ring-label">DAILY GOAL</div>
+</div>
+</div>
+</div>
+</section>
+
+<div class="stats">
+<div class="stat">
+<div class="stat-icon">🎯</div>
+<div class="stat-label">每日飲水目標</div>
+<div class="stat-value"><span id="goal">--</span> <small>ml</small></div>
+<div class="stat-foot">個人參考目標</div>
+</div>
+<div class="stat">
+<div class="stat-icon">💧</div>
+<div class="stat-label">距離目標還差</div>
+<div class="stat-value"><span id="remaining">--</span> <small>ml</small></div>
+<div class="stat-foot">今日剩餘飲水量</div>
+</div>
+<div class="stat">
+<div class="stat-icon">🥤</div>
+<div class="stat-label">今日飲水次數</div>
+<div class="stat-value"><span id="drinkCount">0</span> <small>次</small></div>
+<div class="stat-foot">已記錄事件</div>
+</div>
+</div>
+
+<section class="card">
+<div class="card-head">
+<div><h3>裝置即時監測</h3><div class="muted">硬體感測與藍牙狀態</div></div>
+<span class="pill" id="connectionPill">● OFFLINE</span>
+</div>
+<div class="hardware-grid">
+<div class="hardware">
+<div class="hw-icon">⚖</div>
+<div><div class="hw-label">目前水壺重量</div><div class="hw-value"><span id="weight">0</span> g</div><div class="hw-sub">HX711 LOAD CELL</div></div>
+</div>
+<div class="hardware">
+<div class="hw-icon">⌁</div>
+<div><div class="hw-label">藍牙連線</div><div class="hw-value" id="status">未連線</div><div class="hw-sub">ESP32 · BLE</div></div>
+</div>
+<div class="hardware">
+<div class="hw-icon">◉</div>
+<div><div class="hw-label">燈條提醒</div><div class="hw-value" id="ledText">未啟用</div><div class="hw-sub">WS2812B LED</div></div>
+</div>
+<div class="hardware">
+<div class="hw-icon">◷</div>
+<div><div class="hw-label">下次提醒</div><div class="hw-value" id="nextAlert">等待連線</div><div class="hw-sub">SMART REMINDER</div></div>
+</div>
+</div>
+</section>
+</div>
+
+<div class="stack">
+<section class="card">
+<div class="card-head">
+<div><h3>下一次飲水提醒</h3><div class="muted">保持規律補水</div></div>
+<span class="pill">TIMER</span>
+</div>
+<div class="eyebrow">TIME REMAINING</div>
+<div class="countdown" id="countdown">--:--</div>
+<div class="muted" id="timerCaption">連線後開始倒數</div>
+<div class="progress"><div class="bar" id="timeBar"></div></div>
+</section>
+
+<section class="card">
+<div class="card-head">
+<div><h3>個人飲水目標</h3><div class="muted">計算每日參考飲水量</div></div>
+<span class="pill">PROFILE</span>
+</div>
+<div class="form-grid">
+<div><label for="height">身高（cm）</label><input id="height" type="number" placeholder="例如 170" min="1"></div>
+<div><label for="bodyWeight">體重（kg）</label><input id="bodyWeight" type="number" placeholder="例如 65" min="1" step=".1"></div>
+</div>
+<div class="actions"><button class="primary" id="calculateBtn">計算飲水目標 →</button></div>
+<div class="note" id="calcResult">輸入身高與體重後計算。此為專題展示用估算，不是醫療建議。</div>
+</section>
+
+<section class="card">
+<div class="card-head">
+<div><h3>提醒與門檻設定</h3><div class="muted">設定完成後可同步 ESP32</div></div>
+<span class="pill">CONFIG</span>
+</div>
+<div class="form-grid">
+<div><label for="interval">提醒間隔（分鐘）</label><input id="interval" type="number" min="1" value="60"></div>
+<div><label for="threshold">單次飲水門檻（ml/g）</label><input id="threshold" type="number" min="1" value="10"></div>
+</div>
+<div class="actions">
+<button class="primary" id="saveBtn">儲存並同步</button>
+<button class="secondary" id="resetTimerBtn">重設倒數</button>
+</div>
+</section>
+
+<section class="card">
+<div class="card-head">
+<div><h3>快速測試</h3><div class="muted">測試紀錄流程</div></div>
+<span class="pill">DEMO</span>
+</div>
+<button class="secondary" id="demoBtn" style="width:100%">＋ 模擬喝水 150 ml</button>
+<div class="note">模擬資料不代表真實感測結果。</div>
+</section>
+</div>
+</div>
+
+<section class="card" style="margin-top:18px">
+<div class="card-head">
+<div><h3>今日飲水歷史</h3><div class="muted">最新紀錄會顯示在最上方</div></div>
+<button class="danger" id="resetBtn">清空今日紀錄</button>
+</div>
+<div id="log"><div class="muted">今天還沒有飲水紀錄。</div></div>
+</section>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+let bluetoothDevice = null;
+let weightCharacteristic = null;
+let bleBuffer = "";
+let isConnected = false;
+let lastDrink = null;
+let hasAlerted = false;
+let profile = load("bottleProfile", {height:"",weight:"",goal:0});
+let settings = load("bottleSettings", {interval:60,threshold:10});
+let todayAmount = Number(localStorage.getItem("bottleToday") || 0);
+let logs = load("bottleLogs", []);
+
+function load(key, fallback) {
+try {
+const value = localStorage.getItem(key);
+return value === null ? fallback : JSON.parse(value);
+} catch { return fallback; }
+}
+function $(id) { return document.getElementById(id); }
+
+const todayDate = new Date().toLocaleDateString("sv-SE");
+if (localStorage.getItem("bottleLastDate") !== todayDate) {
+todayAmount = 0;
+logs = [];
+localStorage.setItem("bottleToday", "0");
+localStorage.setItem("bottleLogs", "[]");
+localStorage.setItem("bottleLastDate", todayDate);
+}
+
+$("height").value = profile.height || "";
+$("bodyWeight").value = profile.weight || "";
+$("interval").value = settings.interval || 60;
+$("threshold").value = settings.threshold || 10;
+
+let toastTimer;
+function toast(message) {
+$("toast").textContent = message;
+$("toast").classList.add("show");
+clearTimeout(toastTimer);
+toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2800);
+}
+
+async function connectBLE() {
+if (!navigator.bluetooth) {
+toast("此瀏覽器不支援 Web Bluetooth，請用支援的 Chrome 瀏覽器。");
+return;
+}
+try {
+$("status").textContent = "搜尋裝置中…";
+bluetoothDevice = await navigator.bluetooth.requestDevice({
+filters: [{name:"ESP32_SmartBottle"}],
+optionalServices: [SERVICE_UUID]
+});
+bluetoothDevice.removeEventListener("gattserverdisconnected", disconnected);
+bluetoothDevice.addEventListener("gattserverdisconnected", disconnected);
+
+const server = await bluetoothDevice.gatt.connect();
+const service = await server.getPrimaryService(SERVICE_UUID);
+weightCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+await weightCharacteristic.startNotifications();
+weightCharacteristic.removeEventListener("characteristicvaluechanged", receiveBLE);
+weightCharacteristic.addEventListener("characteristicvaluechanged", receiveBLE);
+
+isConnected = true;
+await sendCommand("TARGET:" + settings.threshold);
+$("status").textContent = "已成功連線";
+$("connectionPill").textContent = "● CONNECTED";
+$("connectionPill").style.color = "var(--green)";
+$("connectBtn").textContent = "✓ 水壺已連線";
+resetTimer();
+toast("ESP32 智慧水壺已連線。");
+} catch (error) {
+console.error(error);
+$("status").textContent = "連線失敗";
+toast("連線失敗或已取消，請確認裝置與權限。");
+}
+}
+
+function disconnected() {
+isConnected = false;
+weightCharacteristic = null;
+bleBuffer = "";
+$("status").textContent = "未連線";
+$("connectionPill").textContent = "● OFFLINE";
+$("connectionPill").style.color = "";
+$("connectBtn").textContent = "↗ 連線水壺";
+$("countdown").textContent = "--:--";
+$("timerCaption").textContent = "藍牙已中斷，請重新連線";
+$("timeBar").style.width = "0%";
+$("nextAlert").textContent = "等待連線";
+setLED("off", "未啟用");
+toast("藍牙已中斷。");
+}
+
+async function sendCommand(command) {
+if (!weightCharacteristic || !isConnected) return false;
+try {
+const data = new TextEncoder().encode(command);
+if (weightCharacteristic.writeValueWithResponse)
+await weightCharacteristic.writeValueWithResponse(data);
+else await weightCharacteristic.writeValue(data);
+console.log("傳送指令:", command);
+return true;
+} catch (error) {
+console.error("指令傳送失敗", error);
+return false;
+}
+}
+
+function receiveBLE(event) {
+bleBuffer += new TextDecoder().decode(event.target.value);
+const lines = bleBuffer.split("\n");
+bleBuffer = lines.pop();
+for (const raw of lines) {
+const line = raw.trim();
+const drink = line.match(/^DRINK:([\d.]+)$/);
+const weight = line.match(/^W:([\d.]+)$/);
+if (drink) {
+const amount = Number(drink[1]);
+if (amount > 0 && Number.isFinite(amount)) registerDrink(amount, "BLE");
+}
+if (weight) {
+const value = Number(weight[1]);
+if (Number.isFinite(value))
+$("weight").textContent = Math.max(0, Math.round(value)).toLocaleString("zh-TW");
+}
+}
+if (bleBuffer.length > 100) bleBuffer = "";
+}
+
+function resetTimer() {
+if (!isConnected) return;
+lastDrink = Date.now();
+hasAlerted = false;
+setLED("off", "等待下一次提醒");
+tick();
+}
+
+function calculateWater() {
+const h = Number($("height").value);
+const w = Number($("bodyWeight").value);
+if (!(h > 0) || !(w > 0)) {
+toast("請輸入有效的身高與體重。");
+return;
+}
+// 延續原本的專題展示公式，並非醫療建議。
+profile = {height:h, weight:w, goal:Math.round((h+w)*10)};
+localStorage.setItem("bottleProfile", JSON.stringify(profile));
+$("calcResult").textContent = "參考目標已更新。實際飲水需求會因活動量、天氣與個人健康狀況而不同。";
+updateProgress();
+toast("每日參考目標已更新。");
+}
+
+function updateProgress() {
+const goal = Number(profile.goal) || 0;
+const remaining = Math.max(0, goal-todayAmount);
+const percent = goal ? Math.min(100, Math.round(todayAmount/goal*100)) : 0;
+$("todayVal").textContent = todayAmount.toLocaleString("zh-TW");
+$("goal").textContent = goal ? goal.toLocaleString("zh-TW") : "--";
+$("remaining").textContent = goal ? remaining.toLocaleString("zh-TW") : "--";
+$("percent").textContent = goal ? percent+"%" : "--";
+$("ringFill").style.strokeDashoffset = 440-(440*percent/100);
+$("drinkCount").textContent = logs.length;
+$("heroMessage").textContent = !goal ? "設定個人目標，開始追蹤今天的補水進度。"
+: percent >= 100 ? "做得好！今天的參考目標已達成。"
+: "穩定補水，照自己的節奏慢慢完成今天的目標。";
+renderLogs();
+}
+
+function registerDrink(amount, source="BLE") {
+amount = Math.round(Number(amount));
+if (!Number.isFinite(amount) || amount <= 0) return;
+todayAmount += amount;
+logs.push({
+time:new Date().toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit",hour12:false}),
+amount, source
+});
+localStorage.setItem("bottleToday", String(todayAmount));
+localStorage.setItem("bottleLogs", JSON.stringify(logs));
+if (isConnected && source === "BLE") resetTimer();
+updateProgress();
+setLED("green", "偵測到喝水 ✓");
+if (source === "BLE") sendCommand("LED_OFF");
+setTimeout(() => {
+if (isConnected && !hasAlerted) setLED("off", "等待下一次提醒");
+}, 3000);
+}
+
+function renderLogs() {
+const el = $("log");
+el.replaceChildren();
+if (!logs.length) {
+const empty = document.createElement("div");
+empty.className = "muted";
+empty.textContent = "今天還沒有飲水紀錄。";
+el.appendChild(empty);
+return;
+}
+logs.slice().reverse().forEach(item => {
+const row = document.createElement("div");
+row.className = "history-item";
+const icon = document.createElement("div");
+icon.className = "history-icon";
+icon.textContent = item.source === "DEMO" ? "✦" : "💧";
+const details = document.createElement("div");
+const title = document.createElement("div");
+title.className = "history-title";
+title.textContent = item.source === "DEMO" ? "模擬飲水紀錄" : "偵測到飲水";
+const time = document.createElement("div");
+time.className = "history-time";
+time.textContent = `${item.time || "--:--"} · ${item.source === "DEMO" ? "測試資料" : "ESP32 感測"}`;
+details.append(title, time);
+const amount = document.createElement("div");
+amount.className = "history-amount";
+amount.textContent = `+${Number(item.amount)||0} ml`;
+row.append(icon, details, amount);
+el.appendChild(row);
+});
+}
+
+function setLED(state, text) {
+$("ledText").textContent = text;
+$("ledText").style.color = state === "green" ? "var(--green)"
+: state === "red" ? "var(--red)" : "var(--muted)";
+}
+
+function demoDrink() {
+registerDrink(150, "DEMO");
+toast("已新增 150 ml 模擬紀錄。");
+}
+
+async function saveSettings() {
+const interval = Number($("interval").value);
+const threshold = Number($("threshold").value);
+if (!(interval >= 1) || !(threshold >= 1)) {
+toast("提醒間隔與門檻必須大於 0。");
+return;
+}
+settings = {
+interval:Math.min(1440, Math.round(interval)),
+threshold:Math.round(threshold)
+};
+localStorage.setItem("bottleSettings", JSON.stringify(settings));
+if (isConnected) {
+const ok = await sendCommand("TARGET:" + settings.threshold);
+toast(ok ? "設定已儲存並同步至 ESP32。" : "設定已儲存，但同步失敗。");
+resetTimer();
+} else toast("設定已儲存，連線後可同步門檻。");
+tick();
+}
+
+function tick() {
+if (!isConnected || !lastDrink) {
+$("countdown").textContent = "--:--";
+$("timerCaption").textContent = "連線後開始倒數";
+$("timeBar").style.width = "0%";
+$("nextAlert").textContent = "等待連線";
+return;
+}
+const total = settings.interval * 60000;
+const elapsed = Date.now()-lastDrink;
+const remain = Math.max(0, total-elapsed);
+const m = Math.floor(remain/60000);
+const s = Math.floor((remain%60000)/1000);
+$("countdown").textContent = `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+$("timeBar").style.width = Math.min(100, elapsed/total*100)+"%";
+$("nextAlert").textContent = remain > 0 ? `${m} 分鐘後` : "提醒時間到";
+$("timerCaption").textContent = remain > 0
+? `每 ${settings.interval} 分鐘提醒一次` : "提醒時間到，記得補充水分";
+if (remain <= 0) {
+setLED("red", "提醒時間到！請喝水");
+if (!hasAlerted) {
+sendCommand("LED_ON");
+hasAlerted = true;
+toast("飲水提醒時間到了！");
+}
+}
+}
+
+$("connectBtn").addEventListener("click", connectBLE);
+$("calculateBtn").addEventListener("click", calculateWater);
+$("demoBtn").addEventListener("click", demoDrink);
+$("saveBtn").addEventListener("click", saveSettings);
+$("resetTimerBtn").addEventListener("click", () => {
+if (!isConnected) return toast("請先連線水壺。");
+resetTimer();
+toast("提醒倒數已重新開始。");
+});
+$("resetBtn").addEventListener("click", () => {
+if (!confirm("確定要清空今天的飲水紀錄嗎？")) return;
+todayAmount = 0;
+logs = [];
+localStorage.setItem("bottleToday", "0");
+localStorage.setItem("bottleLogs", "[]");
+updateProgress();
+toast("今日紀錄已清空。");
+});
+
+if (profile.goal) {
+$("calcResult").textContent = `目前參考目標：${Number(profile.goal).toLocaleString("zh-TW")} ml／日。實際需求因人而異。`;
+}
+updateProgress();
+setInterval(tick, 1000);
+tick();
+</script>
+</body>
+</html>
