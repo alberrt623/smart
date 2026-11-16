@@ -449,44 +449,136 @@ if(e.key==="Enter"||e.key===" "){e.preventDefault();petReact();}
 });
 
 // ==================== BLE ====================
-async function connectBLE(){
-if(!navigator.bluetooth){
-toast("此瀏覽器不支援 Web Bluetooth，請使用支援的 Chrome 瀏覽器。");
-return;
+let isConnecting = false;
+
+async function connectBLE() {
+
+  if (!navigator.bluetooth) {
+    toast("此瀏覽器不支援 Web Bluetooth，請使用 Chrome。");
+    return;
+  }
+
+  if (isConnecting) return;
+
+  if (
+    isConnected &&
+    bluetoothDevice?.gatt?.connected
+  ) {
+    toast("水壺已經連線。");
+    return;
+  }
+
+  isConnecting = true;
+
+  try {
+
+    $("status").textContent = "搜尋裝置中…";
+
+    bluetoothDevice = await navigator.bluetooth.requestDevice({
+
+      filters: [
+        { name: "ESP32_SmartBottle" }
+      ],
+
+      optionalServices: [SERVICE_UUID]
+    });
+
+    bluetoothDevice.removeEventListener(
+      "gattserverdisconnected",
+      disconnected
+    );
+
+    bluetoothDevice.addEventListener(
+      "gattserverdisconnected",
+      disconnected
+    );
+
+    $("status").textContent = "正在建立藍牙連線…";
+
+    const server = await bluetoothDevice.gatt.connect();
+
+    const service = await server.getPrimaryService(
+      SERVICE_UUID
+    );
+
+    weightCharacteristic =
+      await service.getCharacteristic(
+        CHARACTERISTIC_UUID
+      );
+
+    // 先註冊通知事件
+    weightCharacteristic.removeEventListener(
+      "characteristicvaluechanged",
+      receiveBLE
+    );
+
+    weightCharacteristic.addEventListener(
+      "characteristicvaluechanged",
+      receiveBLE
+    );
+
+    // 再啟動通知
+    await weightCharacteristic.startNotifications();
+
+    isConnected = true;
+
+    // 同步飲水門檻
+    const sent = await sendCommand(
+      "TARGET:" + settings.threshold
+    );
+
+    if (!sent) {
+      throw new Error("飲水門檻傳送失敗");
+    }
+
+    $("status").textContent = "已成功連線";
+
+    $("connectionPill").textContent = "● CONNECTED";
+
+    $("connectionPill").style.color = "var(--green)";
+
+    $("connectBtn").textContent = "✓ 水壺已連線";
+
+    resetTimer();
+
+    setPetState("idle", "");
+
+    toast("ESP32 智慧水壺已連線。");
+
+  }
+
+  catch (error) {
+
+    console.error("BLE 連線錯誤：", error);
+
+    isConnected = false;
+
+    weightCharacteristic = null;
+
+    bleBuffer = "";
+
+    if (bluetoothDevice?.gatt?.connected) {
+      bluetoothDevice.gatt.disconnect();
+    }
+
+    $("status").textContent = "連線失敗";
+
+    $("connectionPill").textContent = "● OFFLINE";
+
+    $("connectionPill").style.color = "";
+
+    $("connectBtn").textContent = "↗ 連線水壺";
+
+    toast("連線失敗，請重新連線並確認 ESP32 電源。");
+
+  }
+
+  finally {
+
+    isConnecting = false;
+  }
 }
-try{
-$("status").textContent="搜尋裝置中…";
-bluetoothDevice=await navigator.bluetooth.requestDevice({
-filters:[{name:"ESP32_SmartBottle"}],optionalServices:[SERVICE_UUID]
-});
-bluetoothDevice.removeEventListener("gattserverdisconnected",disconnected);
-bluetoothDevice.addEventListener("gattserverdisconnected",disconnected);
-const server=await bluetoothDevice.gatt.connect();
-const service=await server.getPrimaryService(SERVICE_UUID);
-weightCharacteristic=await service.getCharacteristic(CHARACTERISTIC_UUID);
-await weightCharacteristic.startNotifications();
-weightCharacteristic.removeEventListener("characteristicvaluechanged",receiveBLE);
-weightCharacteristic.addEventListener("characteristicvaluechanged",receiveBLE);
-isConnected=true;
-await sendCommand("TARGET:"+settings.threshold);
-$("status").textContent="已成功連線";
-$("connectionPill").textContent="● CONNECTED";
-$("connectionPill").style.color="var(--green)";
-$("connectBtn").textContent="✓ 水壺已連線";
-resetTimer();
-setPetState("idle","");
-toast("ESP32 智慧水壺已連線。");
-}catch(error){
-console.error(error);
-isConnected=false;
-weightCharacteristic=null;
-$("status").textContent="連線失敗";
-$("connectionPill").textContent="● OFFLINE";
-$("connectionPill").style.color="";
-$("connectBtn").textContent="↗ 連線水壺";
-toast("連線失敗或已取消，請確認裝置與權限。");
-}
-}
+
 
 function disconnected(){
 isConnected=false;weightCharacteristic=null;bleBuffer="";
